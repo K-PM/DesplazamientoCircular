@@ -3,81 +3,80 @@ import math
 
 # Función para calcular el radio
 def calcular_radio(x1, y1, x2, y2):
-    distancia = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    distancia = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     radio = distancia / 2
     return radio
 
-# Función para limpiar la pantalla
-def limpiar_pantalla():
-    ventana.fill(color_pantalla)
-
+pygame.init()
 ancho_pantalla = 800
 alto_pantalla = 600
-
-# Crea una ventana de 800x600 píxeles
 ventana = pygame.display.set_mode((ancho_pantalla, alto_pantalla))
+pygame.display.set_caption("Animación de Círculo y Línea")
 
-# Establece el color de fondo
+
 color_pantalla = (255, 255, 255)
 color_dibujo = (0, 0, 0)
+x1, y1, x2, y2 = 0, 0, 0, 0
+dibujando = False
+radio = 10
+ruta = []
 
-# Variable para el círculo dibujado actual
-circulo_dibujado = None
-
-# Bucle principal
 while True:
-    # Obtiene los eventos del usuario
-    eventos = pygame.event.get()    
-    # Maneja los eventos
+    eventos = pygame.event.get()
     for evento in eventos:
-        if evento.type == pygame.QUIT or (evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE):
-            # Sale del bucle y termina el programa si se cierra la ventana o se presiona Esc
-            pygame.quit()            
+        if evento.type == pygame.QUIT:
+            pygame.quit()
             exit()
 
         if evento.type == pygame.MOUSEBUTTONDOWN:
-            x0, y0 = evento.pos
-            if evento.button == 1:  # Botón izquierdo para dibujar círculos
-                if circulo_dibujado is not None:
-                    # Si hay un círculo dibujado, lo borra antes de dibujar uno nuevo
-                    r = calcular_radio(circulo_dibujado['inicio'][0], circulo_dibujado['inicio'][1],
-                                       circulo_dibujado['final'][0], circulo_dibujado['final'][1])
-                    limpiar_pantalla()
-                # Inicia el nuevo círculo
-                inicio = (x0, y0)
-                final = inicio
+            if evento.button == 1: 
+                x1, y1 = evento.pos
+                dibujando = True
+                ruta = []  
+            elif evento.button == 3:  
+                x1, y1 = evento.pos
+                radio = 6
 
         if evento.type == pygame.MOUSEMOTION:
-            if evento.buttons[0] and circulo_dibujado is not None:
-                # Si el botón izquierdo del mouse está presionado y hay un círculo dibujado,
-                # borra el círculo antes de dibujar uno nuevo
-                r = calcular_radio(circulo_dibujado['inicio'][0], circulo_dibujado['inicio'][1],
-                                   circulo_dibujado['final'][0], circulo_dibujado['final'][1])
-                limpiar_pantalla()
+            if dibujando and pygame.mouse.get_pressed()[0]: 
+                x2, y2 = evento.pos
+                ruta.append((x2, y2))
 
-            if circulo_dibujado is not None:
-                # Dibuja el círculo actual en movimiento
-                x1, y1 = evento.pos
-                radio = calcular_radio(inicio[0], inicio[1], x1, y1)
-                pygame.draw.circle(ventana, color_dibujo, inicio, int(radio))
-                pygame.draw.circle(ventana, color_pantalla, inicio, int(radio) - 2)
+            elif pygame.mouse.get_pressed()[2]:  
+                x2, y2 = evento.pos
+                radio = calcular_radio(x1, y1, x2, y2)
+
+        # Dibujar el círculo y el dibujo a mano alzada
+        ventana.fill(color_pantalla)
+        pygame.draw.circle(ventana, color_dibujo, (x1, y1), int(radio), 1)
+
+        if len(ruta) >= 2:
+            pygame.draw.lines(ventana, color_dibujo, False, ruta, 1)
+
+        pygame.display.update()
 
         if evento.type == pygame.MOUSEBUTTONUP:
-            if circulo_dibujado is not None:
-                # Cuando se suelta el botón del mouse, guarda las coordenadas finales del círculo dibujado
-                final = (x1, y1)
-                circulo_dibujado = {'inicio': inicio, 'final': final}
-            else:
-                # Si no hay un círculo dibujado, crea uno nuevo
-                final = (x1, y1)
-                circulo_dibujado = {'inicio': inicio, 'final': final}
+            if evento.button == 1: 
+                dibujando = False
+                pygame.time.delay(500)
+# Desplazar el círculo a lo largo de la línea
+        if evento.type == pygame.KEYDOWN and evento.key == pygame.K_RETURN:
+            
+            if len(ruta) >= 2:
+                steps = 100
+                for step in range(1, steps + 1):
+                    percentage = step / steps
+                    index = int((len(ruta) - 1) * percentage)
+                    x, y = ruta[index]
+                    ventana.fill(color_pantalla)
+                    pygame.draw.circle(ventana, color_dibujo, (int(x), int(y)), int(radio), 1)
+                    pygame.draw.lines(ventana, color_dibujo, False, ruta, 1)
 
-    # Dibuja el círculo dibujado actual
-    if circulo_dibujado is not None:
-        r = calcular_radio(circulo_dibujado['inicio'][0], circulo_dibujado['inicio'][1],
-                           circulo_dibujado['final'][0], circulo_dibujado['final'][1])
-        pygame.draw.circle(ventana, color_dibujo, circulo_dibujado['inicio'], int(r))
-        pygame.draw.circle(ventana, color_pantalla, circulo_dibujado['inicio'], int(r) - 2)
+                    pygame.display.update()
+                    pygame.time.delay(20)
 
-    # Actualiza la ventana
-    pygame.display.update()
+                # Borrar únicamente la línea 
+                ventana.fill(color_pantalla)
+                pygame.draw.circle(ventana, color_dibujo, (int(x), int(y)), int(radio), 1)
+                pygame.display.update()
+                pygame.time.delay(500)
